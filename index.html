@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>صور إلى PDF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--mute:#6b6a65;--line:#e2e0d9;--acc:#0f766e;--acc-ink:#fff;--soft:#e6f2f0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151514;--card:#1f1f1d;--ink:#f0eee8;--mute:#a09e96;--line:#34332f;--acc:#2dd4bf;--acc-ink:#042f2b;--soft:#173532}}
+:root[data-theme="dark"]{--bg:#151514;--card:#1f1f1d;--ink:#f0eee8;--mute:#a09e96;--line:#34332f;--acc:#2dd4bf;--acc-ink:#042f2b;--soft:#173532}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,"Segoe UI",system-ui,sans-serif;line-height:1.6}
+main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.5rem;margin:8px 0 4px}
+.sub{color:var(--mute);margin:0 0 20px;font-size:.95rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:28px 12px;text-align:center;cursor:pointer;background:var(--card);transition:.15s}
+.drop.over,.drop:hover{border-color:var(--acc);background:var(--soft)}
+.drop b{display:block;font-size:1.05rem}
+.drop span{color:var(--mute);font-size:.85rem}
+h2{font-size:1rem;margin:0 0 10px}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt label{display:block;border:1.5px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;font-size:.9rem}
+.opt label small{display:block;color:var(--mute);font-size:.75rem}
+.opt input:checked+label{border-color:var(--acc);background:var(--soft)}
+.opt input:focus-visible+label{outline:2px solid var(--acc)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>div{flex:1;min-width:140px}
+label.f{display:block;font-size:.85rem;color:var(--mute);margin-bottom:4px}
+.est{color:var(--acc);font-weight:700}
+select,input[type=text],input[type=number]{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.list{display:flex;flex-direction:column;gap:8px}
+.it{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:6px 8px}
+.it img{width:48px;height:48px;object-fit:cover;border-radius:8px;background:var(--line)}
+.it .n{flex:1;min-width:0;font-size:.85rem}
+.it .n div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .n small{color:var(--mute)}
+.ib{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;width:34px;height:34px;font-size:1rem;cursor:pointer}
+.ib:disabled{opacity:.35}
+.btn{width:100%;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:700;font-size:1rem;background:var(--acc);color:var(--acc-ink);cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:400;margin-top:8px}
+.tot{display:flex;justify-content:space-between;color:var(--mute);font-size:.85rem;margin-bottom:10px}
+#status{text-align:center;color:var(--mute);font-size:.9rem;margin:10px 0 0;min-height:1.4em}
+.res{background:var(--soft);border-color:var(--acc)}
+.res .big{font-size:1.3rem;font-weight:700}
+.cmp{color:var(--mute);font-size:.9rem;margin:2px 0 12px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<h1>حوّل صورك إلى PDF</h1>
+<p class="sub">ارفع الصور، اختار الحجم اللي بدك إياه، ونزّل الملف. كل شي بصير على جهازك وما بنرفع صورك لأي مكان.</p>
+
+<div class="drop" id="drop" tabindex="0" role="button">
+  <b>اضغط لاختيار الصور</b>
+  <span>أو اسحبها وفلتها هون (JPG, PNG, WebP…)</span>
+  <input type="file" id="file" accept="image/*" multiple hidden>
+</div>
+
+<div class="card" id="listCard" style="margin-top:14px" hidden>
+  <div class="tot"><span id="cnt"></span><span id="tsize"></span></div>
+  <div class="list" id="list"></div>
+  <button class="btn ghost" id="clear" type="button">مسح الكل</button>
+</div>
+
+<div class="card">
+  <h2>مساحة الملف</h2>
+  <div class="opts">
+    <div class="opt"><input type="radio" name="q" id="q0" value="orig"><label for="q0">أصلية<small>بدون ضغط</small><small class="est" id="e0"></small></label></div>
+    <div class="opt"><input type="radio" name="q" id="q1" value="mid" checked><label for="q1">متوسطة<small>جودة عالية</small><small class="est" id="e1"></small></label></div>
+    <div class="opt"><input type="radio" name="q" id="q2" value="low"><label for="q2">قليلة<small>أصغر حجم</small><small class="est" id="e2"></small></label></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <div><label class="f" for="page">حجم الصفحة</label>
+      <select id="page"><option value="a4">A4</option><option value="fit">على قد الصورة</option></select></div>
+    <div><label class="f" for="name">اسم الملف</label>
+      <input type="text" id="name" value="صور" autocomplete="off"></div>
+    <div><label class="f" for="mar">الحواف / المارجن (مم)</label>
+      <input type="number" id="mar" min="0" max="50" step="1" value="7" inputmode="decimal"></div>
+  </div>
+</div>
+
+<button class="btn" id="go" type="button" disabled>حوّل إلى PDF</button>
+<p id="status" role="status"></p>
+
+<div class="card res" id="res" hidden>
+  <div class="big" id="rsize"></div>
+  <div class="cmp" id="rcmp"></div>
+  <button class="btn" id="save" type="button">تنزيل الملف</button>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const PRESETS={mid:{max:1600,q:.72},low:{max:1000,q:.5}};
+let items=[],uid=0,blob=null;
+
+const fmt=b=>b>=1048576?(b/1048576).toFixed(2)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+const tick=()=>new Promise(r=>setTimeout(r,0));
+
+function add(files){
+  for(const f of files){
+    if(!f.type.startsWith('image/'))continue;
+    items.push({id:++uid,file:f,url:URL.createObjectURL(f)});
+  }
+  blob=null;$('res').hidden=true;render();
+}
+function render(){
+  const l=$('list');l.innerHTML='';
+  $('listCard').hidden=!items.length;
+  $('go').disabled=!items.length;
+  items.forEach((it,i)=>{
+    const d=document.createElement('div');d.className='it';
+    const im=document.createElement('img');im.src=it.url;im.alt='';
+    const n=document.createElement('div');n.className='n';
+    const a=document.createElement('div');a.textContent=it.file.name;
+    const s=document.createElement('small');s.textContent=fmt(it.file.size);
+    n.append(a,s);
+    const mk=(t,fn,dis)=>{const b=document.createElement('button');b.className='ib';b.type='button';b.textContent=t;b.disabled=!!dis;b.onclick=fn;return b};
+    d.append(im,n,
+      mk('↑',()=>mv(i,-1),i===0),
+      mk('↓',()=>mv(i,1),i===items.length-1),
+      mk('✕',()=>{URL.revokeObjectURL(it.url);items.splice(i,1);blob=null;$('res').hidden=true;render()}));
+    l.append(d);
+  });
+  $('cnt').textContent=items.length+' صورة';
+  est();
+  $('tsize').textContent='المجموع: '+fmt(items.reduce((a,b)=>a+b.file.size,0));
+}
+let estTok=0;
+async function est(){
+  const tok=++estTok,ids=['e0','e1','e2'],ms=['orig','mid','low'];
+  ids.forEach(i=>$(i).textContent=items.length?'…':'');
+  if(!items.length)return;
+  const tot={orig:0,mid:0,low:0};
+  for(const it of items){
+    it.est=it.est||{};
+    for(const m of ms){
+      if(it.est[m]==null){
+        if(m==='orig'&&(it.file.type==='image/jpeg'||it.file.type==='image/png'))it.est[m]=it.file.size;
+        else{await tick();try{const p=await prepare(it,m);it.est[m]=Math.round((p.data.length-p.data.indexOf(',')-1)*0.75)}catch(e){it.est[m]=it.file.size}}
+        if(tok!==estTok)return;
+      }
+      tot[m]+=it.est[m]+1200;
+    }
+  }
+  ms.forEach((m,i)=>$(ids[i]).textContent='≈ '+fmt(tot[m]));
+}
+function mv(i,d){const j=i+d;[items[i],items[j]]=[items[j],items[i]];blob=null;$('res').hidden=true;render()}
+
+const drop=$('drop'),inp=$('file');
+drop.onclick=()=>inp.click();
+drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inp.click()}};
+inp.onchange=()=>{add(inp.files);inp.value=''};
+['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>add(e.dataTransfer.files));
+$('clear').onclick=()=>{items.forEach(i=>URL.revokeObjectURL(i.url));items=[];blob=null;$('res').hidden=true;render()};
+
+function readURL(f){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
+
+async function prepare(it,mode){
+  const bmp=await createImageBitmap(it.file);
+  const w=bmp.width,h=bmp.height;
+  if(mode==='orig'){
+    const t=it.file.type;
+    if(t==='image/jpeg'||t==='image/png'){
+      let rotated=false;
+      try{const raw=await createImageBitmap(it.file,{imageOrientation:'none'});rotated=raw.width!==w;raw.close&&raw.close()}catch(e){}
+      if(!rotated){bmp.close&&bmp.close();return{data:await readURL(it.file),type:t==='image/png'?'PNG':'JPEG',w,h}}
+    }
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(bmp,0,0);bmp.close&&bmp.close();
+    return{data:c.toDataURL('image/png'),type:'PNG',w,h};
+  }
+  const p=PRESETS[mode],k=Math.min(1,p.max/Math.max(w,h));
+  const cw=Math.round(w*k),ch=Math.round(h*k);
+  const c=document.createElement('canvas');c.width=cw;c.height=ch;
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cw,ch);
+  x.imageSmoothingQuality='high';x.drawImage(bmp,0,0,cw,ch);bmp.close&&bmp.close();
+  return{data:c.toDataURL('image/jpeg',p.q),type:'JPEG',w:cw,h:ch};
+}
+
+$('go').onclick=async()=>{
+  const mode=document.querySelector('input[name=q]:checked').value;
+  const pg=$('page').value;
+  $('go').disabled=true;$('res').hidden=true;blob=null;
+  const {jsPDF}=window.jspdf||{};
+  if(!jsPDF){$('status').textContent='تعذّر تحميل مكتبة PDF. تأكد من الإنترنت وأعد تحميل الصفحة.';$('go').disabled=false;return}
+  let doc=null;
+  const m=Math.max(0,Math.min(50,parseFloat($('mar').value)||0))*2.835;
+  try{
+    for(let i=0;i<items.length;i++){
+      $('status').textContent='جاري معالجة الصورة '+(i+1)+' من '+items.length+'…';
+      await tick();
+      const im=await prepare(items[i],mode);
+      const land=im.w>im.h;
+      let pw,ph,x,y,w,h;
+      if(pg==='a4'){
+        pw=land?842:595;ph=land?595:842;
+        const k=Math.min((pw-2*m)/im.w,(ph-2*m)/im.h);
+        w=im.w*k;h=im.h*k;x=(pw-w)/2;y=(ph-h)/2;
+      }else{
+        const k=842/Math.max(im.w,im.h);
+        w=im.w*k;h=im.h*k;pw=w+2*m;ph=h+2*m;x=m;y=m;
+      }
+      const o=pw>ph?'l':'p';
+      if(!doc)doc=new jsPDF({unit:'pt',format:[pw,ph],orientation:o,compress:true});
+      else doc.addPage([pw,ph],o);
+      doc.addImage(im.data,im.type,x,y,w,h,undefined,'FAST');
+    }
+    blob=doc.output('blob');
+    const orig=items.reduce((a,b)=>a+b.file.size,0);
+    $('rsize').textContent='الحجم بعد التحويل: '+fmt(blob.size);
+    const diff=Math.round((1-blob.size/orig)*100);
+    $('rcmp').textContent='حجم الصور الأصلية: '+fmt(orig)+(diff>0?' — وفّرت '+diff+'%':'');
+    $('res').hidden=false;$('status').textContent='جاهز ✓';
+    $('res').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){
+    $('status').textContent='صار خطأ أثناء التحويل: '+(e&&e.message?e.message:e);
+  }
+  $('go').disabled=!items.length;
+};
+
+$('save').onclick=async()=>{
+  if(!blob)return;
+  const nm=($('name').value.trim()||'صور').replace(/[\\/:*?"<>|]/g,'-');
+  try{
+    const d=(typeof claude!=='undefined'&&claude.use)?await claude.use('downloads'):null;
+    if(d){await d.save({filename:nm+'.pdf',data:blob})}
+    else{
+      const u=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=u;a.download=nm+'.pdf';document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(u),10000);
+    }
+    $('status').textContent='تم الحفظ ✓';
+  }catch(e){
+    $('status').textContent=e&&e.code==='declined'?'تم إلغاء التنزيل.':'تعذّر التنزيل: '+((e&&e.message)||e);
+  }
+};
+render();
+</script>
+</body>
+</html>
