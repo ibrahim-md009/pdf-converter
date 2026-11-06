@@ -1,605 +1,462 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>تحويل صور إلى PDF</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-      :root {
-        --bg: #f6f5f1;
-        --card: #fff;
-        --ink: #1d1d1b;
-        --mute: #6b6a65;
-        --line: #e2e0d9;
-        --acc: #0f766e;
-        --acc-ink: #fff;
-        --soft: #e6f2f0;
-        box-sizing: border-box;
-        padding-top: env(safe-area-inset-top, 0px);
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-      }
-      @media (prefers-color-scheme: dark) {
-        :root:not([data-theme="light"]) {
-          --bg: #151514;
-          --card: #1f1f1d;
-          --ink: #f0eee8;
-          --mute: #a09e96;
-          --line: #34332f;
-          --acc: #2dd4bf;
-          --acc-ink: #042f2b;
-          --soft: #173532;
-        }
-      }
-      :root[data-theme="dark"] {
-        --bg: #151514;
-        --card: #1f1f1d;
-        --ink: #f0eee8;
-        --mute: #a09e96;
-        --line: #34332f;
-        --acc: #2dd4bf;
-        --acc-ink: #042f2b;
-        --soft: #173532;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      html {
-        scroll-padding-top: env(safe-area-inset-top, 0px);
-      }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--ink);
-        font-family: Tahoma, "Segoe UI", system-ui, sans-serif;
-        line-height: 1.6;
-      }
-      main {
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 20px 16px 48px;
-      }
-      h1 {
-        font-size: 1.5rem;
-        margin: 8px 0 4px;
-      }
-      .sub {
-        color: var(--mute);
-        margin: 0 0 20px;
-        font-size: 0.95rem;
-      }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 16px;
-        margin-bottom: 14px;
-      }
-      .drop {
-        border: 2px dashed var(--line);
-        border-radius: 14px;
-        padding: 28px 12px;
-        text-align: center;
-        cursor: pointer;
-        background: var(--card);
-        transition: 0.15s;
-      }
-      .drop.over,
-      .drop:hover {
-        border-color: var(--acc);
-        background: var(--soft);
-      }
-      .drop b {
-        display: block;
-        font-size: 1.05rem;
-      }
-      .drop span {
-        color: var(--mute);
-        font-size: 0.85rem;
-      }
-      h2 {
-        font-size: 1rem;
-        margin: 0 0 10px;
-      }
-      .opts {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-      }
-      .opt input {
-        position: absolute;
-        opacity: 0;
-        pointer-events: none;
-      }
-      .opt label {
-        display: block;
-        border: 1.5px solid var(--line);
-        border-radius: 12px;
-        padding: 10px 6px;
-        text-align: center;
-        cursor: pointer;
-        font-size: 0.9rem;
-      }
-      .opt label small {
-        display: block;
-        color: var(--mute);
-        font-size: 0.75rem;
-      }
-      .opt input:checked + label {
-        border-color: var(--acc);
-        background: var(--soft);
-      }
-      .opt input:focus-visible + label {
-        outline: 2px solid var(--acc);
-      }
-      .row {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-      .row > div {
-        flex: 1;
-        min-width: 140px;
-      }
-      label.f {
-        display: block;
-        font-size: 0.85rem;
-        color: var(--mute);
-        margin-bottom: 4px;
-      }
-      .est {
-        color: var(--acc);
-        font-weight: 700;
-      }
-      select,
-      input[type="text"],
-      input[type="number"] {
-        width: 100%;
-        padding: 10px;
-        border-radius: 10px;
-        border: 1px solid var(--line);
-        background: var(--bg);
-        color: var(--ink);
-        font: inherit;
-      }
-      .list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .it {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 6px 8px;
-      }
-      .it img {
-        width: 48px;
-        height: 48px;
-        object-fit: cover;
-        border-radius: 8px;
-        background: var(--line);
-      }
-      .it .n {
-        flex: 1;
-        min-width: 0;
-        font-size: 0.85rem;
-      }
-      .it .n div {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .it .n small {
-        color: var(--mute);
-      }
-      .ib {
-        border: 1px solid var(--line);
-        background: var(--bg);
-        color: var(--ink);
-        border-radius: 8px;
-        width: 34px;
-        height: 34px;
-        font-size: 1rem;
-        cursor: pointer;
-      }
-      .ib:disabled {
-        opacity: 0.35;
-      }
-      .btn {
-        width: 100%;
-        border: 0;
-        border-radius: 12px;
-        padding: 14px;
-        font: inherit;
-        font-weight: 700;
-        font-size: 1rem;
-        background: var(--acc);
-        color: var(--acc-ink);
-        cursor: pointer;
-      }
-      .btn:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-      .btn.ghost {
-        background: transparent;
-        color: var(--ink);
-        border: 1px solid var(--line);
-        font-weight: 400;
-        margin-top: 8px;
-      }
-      .tot {
-        display: flex;
-        justify-content: space-between;
-        color: var(--mute);
-        font-size: 0.85rem;
-        margin-bottom: 10px;
-      }
-      #status {
-        text-align: center;
-        color: var(--mute);
-        font-size: 0.9rem;
-        margin: 10px 0 0;
-        min-height: 1.4em;
-      }
-      .res {
-        background: var(--soft);
-        border-color: var(--acc);
-      }
-      .res .big {
-        font-size: 1.3rem;
-        font-weight: 700;
-      }
-      .cmp {
-        color: var(--mute);
-        font-size: 0.9rem;
-        margin: 2px 0 12px;
-      }
-      [hidden] {
-        display: none !important;
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1>حوّل صورك إلى PDF</h1>
-      <p class="sub">
-        ارفع الصور، اختار الحجم اللي بدك إياه، ونزّل الملف. كل شي بصير على جهازك وما بنرفع صورك لأي مكان.
-      </p>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>أدوات PDF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg1:#b9d0f5;--bg2:#eaf1fd;--panel:#e9edf2;--card:#fff;--ink:#14161a;--mute:#5d6470;--line:#cfd5de;--acc:#d9622b;--soft:#fde8dc;--ok:#1f9d55;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#0f1b33;--bg2:#161b26;--panel:#22262d;--card:#2d323b;--ink:#f1f2f4;--mute:#a3a9b3;--line:#434a55;--soft:#43291d}}
+:root[data-theme="dark"]{--bg1:#0f1b33;--bg2:#161b26;--panel:#22262d;--card:#2d323b;--ink:#f1f2f4;--mute:#a3a9b3;--line:#434a55;--soft:#43291d}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background:var(--bg2) linear-gradient(var(--bg1),var(--bg2)) fixed;color:var(--ink);font-family:Tahoma,"Segoe UI",system-ui,sans-serif;line-height:1.6}
+main{max-width:760px;margin:0 auto;padding:16px 12px 40px}
+.panel{background:var(--panel);border-radius:18px;padding:18px;box-shadow:0 8px 30px rgba(20,40,90,.12)}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+h1{font-size:1.5rem;margin:0}
+.sub{margin:0 0 12px;color:var(--mute);font-size:.9rem}
+.pill{background:var(--line);border-radius:99px;padding:4px 12px;font-size:.85rem;color:var(--mute);white-space:nowrap}
+.pill b{color:var(--ink);font-size:1rem;margin-inline-start:4px}
+.tabs{display:flex;gap:6px;margin:0 0 12px;flex-wrap:wrap}
+.tab,.b{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:6px 12px;cursor:pointer}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.b.w{background:var(--card)}
+.b:disabled{opacity:.45;cursor:default}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.stage{position:relative;height:400px;overflow:hidden;margin:4px 0 8px}
+.hoop{position:absolute;left:50%;top:0;width:220px;margin-left:-110px}
+.board{height:130px;background:var(--card);border:1.5px dashed var(--line);border-radius:14px;text-align:center;padding-top:22px;position:relative;transition:.2s}
+.board.hit{background:var(--soft);border-color:var(--acc)}
+.board svg{width:22px;height:22px;stroke:var(--mute);fill:none;stroke-width:1.8}
+.board b{display:block;font-size:1.1rem;font-weight:600}
+.board span{font-size:.8rem;color:var(--mute)}
+.sq{position:absolute;left:50%;bottom:10px;width:90px;height:44px;margin-left:-45px;border:2.5px solid var(--acc);border-radius:3px}
+.rim{position:absolute;left:50%;top:131px;width:100px;height:14px;margin-left:-50px;border-radius:50%;background:var(--acc);box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.net{position:absolute;left:50%;top:140px;width:90px;height:70px;margin-left:-45px;stroke:var(--mute);fill:none;stroke-width:1.3}
+#dots{position:absolute;inset:0;pointer-events:none}
+#dots i{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--acc)}
+.sprite{position:absolute;left:0;top:0;width:56px;height:68px;touch-action:none;cursor:grab;will-change:transform;z-index:3}
+.sprite small{position:absolute;top:74px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.7rem;color:var(--mute);max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.doc{width:56px;height:68px;background:#fff;border-radius:6px;box-shadow:0 6px 16px rgba(0,0,0,.25);position:relative;background-image:repeating-linear-gradient(#fff 0 6px,#e4e6ea 6px 8px);background-size:70% 34px;background-repeat:no-repeat;background-position:8px 8px}
+.doc u{position:absolute;bottom:9px;left:8px;background:#d93f3f;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;text-decoration:none}
+.plus{position:absolute;left:50%;top:70px;margin-left:78px;color:var(--acc);font-weight:800;font-size:1.5rem;opacity:0;pointer-events:none}
+.plus.on{animation:pl .9s ease-out}
+@keyframes pl{0%{opacity:0;transform:translateY(10px)}20%{opacity:1}100%{opacity:0;transform:translateY(-26px)}}
+.hint{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:.8rem;color:var(--mute);margin:0}
+.o{margin-top:6px}
+h2{font-size:.95rem;margin:0 0 8px}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.opts.two{grid-template-columns:repeat(2,1fr)}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt label{display:block;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:9px 4px;text-align:center;cursor:pointer;font-size:.88rem}
+.opt label small{display:block;color:var(--mute);font-size:.72rem}
+.opt label .est{color:var(--acc);font-weight:700}
+.opt input:checked+label{border-color:var(--acc);background:var(--soft)}
+.opt input:focus-visible+label{outline:2px solid var(--acc)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.row>div{flex:1;min-width:130px}
+label.f{display:block;font-size:.8rem;color:var(--mute);margin-bottom:3px}
+select,input[type=text],input[type=number]{width:100%;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+.go{width:100%;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:700;font-size:1rem;background:var(--acc);color:#fff;cursor:pointer;margin-top:4px}
+.go:disabled{opacity:.45;cursor:default}
+#msg{text-align:center;color:var(--mute);font-size:.85rem;margin:8px 0 0;min-height:1.3em}
+.tot{color:var(--mute);font-size:.8rem;margin:10px 0 4px;min-height:1em}
+.dock{display:flex;flex-direction:column;gap:8px}
+.it{content-visibility:auto;contain-intrinsic-size:auto 58px;display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:8px 10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.th{width:42px;height:42px;border-radius:8px;background:var(--line);overflow:hidden;display:grid;place-items:center;flex:none}
+.th img{width:100%;height:100%;object-fit:cover}
+.th em{font-style:normal;font-size:.65rem;font-weight:700;color:#fff;background:#d93f3f;padding:1px 5px;border-radius:3px}
+.n{flex:1;min-width:0;font-size:.85rem}
+.n>div:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.n small{color:var(--mute)}
+.bar{height:4px;background:var(--line);border-radius:4px;margin-top:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.ib{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;width:32px;height:32px;cursor:pointer}
+.ib:disabled{opacity:.3}
+.res{margin-top:12px;background:var(--soft);border:1.5px solid var(--acc);border-radius:14px;padding:14px}
+.res .big{font-size:1.2rem;font-weight:700}
+.res .cmp{color:var(--mute);font-size:.88rem;margin:2px 0 10px}
+[hidden]{display:none!important}
+@media (max-width:520px){.stage{height:360px}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<main>
+<div class="panel">
+  <header>
+    <div><h1>أدوات PDF</h1><p class="sub">اسحب وأفلت، أو سدّد الرمية.</p></div>
+    <div class="pill">تم الرفع<b id="up">0</b></div>
+  </header>
+  <div class="tabs">
+    <button class="tab on" data-m="img" type="button">صور إلى PDF</button>
+    <button class="tab" data-m="p2i" type="button">PDF إلى صور</button>
+    <button class="tab" data-m="split" type="button">تقسيم PDF</button>
+  </div>
+  <div class="btns">
+    <button class="b w" id="browse" type="button">تصفّح الملفات</button>
+    <button class="b" id="auto" type="button" disabled>سدّد الرمية عني</button>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+  </div>
 
-      <div class="drop" id="drop" tabindex="0" role="button">
-        <b>اضغط لاختيار الصور</b>
-        <span>أو اسحبها وفلتها هون (JPG, PNG, WebP…)</span>
-        <input type="file" id="file" accept="image/*" multiple hidden />
+  <div class="stage" id="stage">
+    <div class="hoop">
+      <div class="board" id="board">
+        <svg viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5h14v-5"/></svg>
+        <b>أفلت الملفات هنا</b><span>أو سدّد الرمية</span><i class="sq"></i>
       </div>
+      <i class="rim" style="position:absolute"></i>
+    </div>
+    <svg class="net" viewBox="0 0 90 70"><path d="M2 0L22 70M16 0L30 70M30 0L38 70M45 0V70M60 0L52 70M74 0L60 70M88 0L68 70M6 22H84M14 44H76M22 64H68"/></svg>
+    <div id="dots"></div>
+    <div class="sprite" id="sp" hidden><div class="doc" id="doc"><u id="badge">PDF</u></div><small id="spn"></small></div>
+    <div class="plus" id="plus">+1</div>
+    <p class="hint" id="hint"></p>
+  </div>
 
-      <div class="card" id="listCard" style="margin-top: 14px" hidden>
-        <div class="tot"><span id="cnt"></span><span id="tsize"></span></div>
-        <div class="list" id="list"></div>
-        <button class="btn ghost" id="clear" type="button">مسح الكل</button>
-      </div>
+  <div class="o" data-m="img">
+    <h2>مساحة الملف</h2>
+    <div class="opts">
+      <div class="opt"><input type="radio" name="q" id="q0" value="orig"><label for="q0">أصلية<small>بدون ضغط</small><small class="est" id="e0"></small></label></div>
+      <div class="opt"><input type="radio" name="q" id="q1" value="mid" checked><label for="q1">متوسطة<small>جودة عالية</small><small class="est" id="e1"></small></label></div>
+      <div class="opt"><input type="radio" name="q" id="q2" value="low"><label for="q2">قليلة<small>أصغر حجم</small><small class="est" id="e2"></small></label></div>
+    </div>
+    <div class="row">
+      <div><label class="f" for="page">حجم الصفحة</label><select id="page"><option value="a4">A4</option><option value="fit">على قد الصورة</option></select></div>
+      <div><label class="f" for="mar">الحواف / المارجن (مم)</label><input type="number" id="mar" min="0" max="50" step="1" value="7" inputmode="decimal"></div>
+    </div>
+  </div>
+  <div class="o" data-m="p2i" hidden>
+    <div class="row">
+      <div><label class="f" for="fmt">صيغة الصور</label><select id="fmt"><option value="png">PNG (جودة أعلى)</option><option value="jpg">JPG (حجم أصغر)</option></select></div>
+      <div><label class="f" for="res2">الدقة</label><select id="res2"><option value="1.5">عادية</option><option value="2" selected>عالية</option><option value="3">عالية جداً</option></select></div>
+    </div>
+  </div>
+  <div class="o" data-m="split" hidden>
+    <div class="opts two">
+      <div class="opt"><input type="radio" name="sm" id="sm0" value="each" checked><label for="sm0">كل صفحة بملف مستقل<small>الملفات داخل ZIP</small></label></div>
+      <div class="opt"><input type="radio" name="sm" id="sm1" value="range"><label for="sm1">استخراج صفحات<small>ملف واحد بالصفحات المختارة</small></label></div>
+    </div>
+    <label class="f" for="rng">الصفحات (لخيار الاستخراج)، مثال: 1-3,5</label>
+    <input type="text" id="rng" value="1" autocomplete="off" style="margin-bottom:10px">
+  </div>
 
-      <div class="card">
-        <h2>مساحة الملف</h2>
-        <div class="opts">
-          <div class="opt">
-            <input type="radio" name="q" id="q0" value="orig" /><label for="q0"
-              >أصلية<small>بدون ضغط</small><small class="est" id="e0"></small
-            ></label>
-          </div>
-          <div class="opt">
-            <input type="radio" name="q" id="q1" value="mid" checked /><label for="q1"
-              >متوسطة<small>جودة عالية</small><small class="est" id="e1"></small
-            ></label>
-          </div>
-          <div class="opt">
-            <input type="radio" name="q" id="q2" value="low" /><label for="q2"
-              >قليلة<small>أصغر حجم</small><small class="est" id="e2"></small
-            ></label>
-          </div>
-        </div>
-      </div>
+  <div class="row"><div><label class="f" for="name">اسم الملف الناتج (اختياري)</label><input type="text" id="name" autocomplete="off"></div></div>
+  <button class="go" id="go" type="button" disabled>حوّل إلى PDF</button>
+  <p id="msg" role="status"></p>
 
-      <div class="card">
-        <div class="row">
-          <div>
-            <label class="f" for="page">حجم الصفحة</label>
-            <select id="page">
-              <option value="a4">A4</option>
-              <option value="fit">على قد الصورة</option>
-            </select>
-          </div>
-          <div>
-            <label class="f" for="name">اسم الملف</label> <input type="text" id="name" value="صور" autocomplete="off" />
-          </div>
-          <div>
-            <label class="f" for="mar">الحواف / المارجن (مم)</label>
-            <input type="number" id="mar" min="0" max="50" step="1" value="7" inputmode="decimal" />
-          </div>
-        </div>
-      </div>
+  <div class="tot" id="tot"></div>
+  <div class="dock" id="dock"></div>
 
-      <button class="btn" id="go" type="button" disabled>حوّل إلى PDF</button>
-      <p id="status" role="status"></p>
+  <div class="res" id="res" hidden>
+    <div class="big" id="rsize"></div>
+    <div class="cmp" id="rcmp"></div>
+    <button class="go" id="save" type="button" style="margin:0">تنزيل</button>
+  </div>
+</div>
+</main>
 
-      <div class="card res" id="res" hidden>
-        <div class="big" id="rsize"></div>
-        <div class="cmp" id="rcmp"></div>
-        <button class="btn" id="save" type="button">تنزيل الملف</button>
-      </div>
-    </main>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=b=>b>=1048576?(b/1048576).toFixed(2)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+const tick=()=>new Promise(r=>setTimeout(r,0));
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isPdf=f=>f.type==='application/pdf'||/\.pdf$/i.test(f.name);
+const ACC={img:f=>f.type.startsWith('image/'),p2i:isPdf,split:isPdf};
+const HINT={img:'اختار صور وسدّدها جوا السلة',p2i:'اختار ملفات PDF وسدّدها جوا السلة',split:'اختار ملفات PDF وسدّدها جوا السلة'};
+const GO={img:'حوّل إلى PDF',p2i:'حوّل إلى صور',split:'نفّذ التقسيم'};
+const PRESETS={mid:{max:1600,q:.72},low:{max:1000,q:.5}};
+const G=1400,K=6,MAXP=200;
+const base=f=>f.name.replace(/\.[^.]+$/,'');
+const nm=d=>($('name').value.trim()||d).replace(/[\\/:*?"<>|]/g,'-');
+const msg=t=>$('msg').textContent=t;
+let mode='img',pend=[],items=[],uid=0,blob=null,outName='',busy=false,fly=null,drag=false,pos=null,pull=null,W=0,H=0,R={x:0,y:138},S={x:60,y:300},last=0,estTok=0;
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    <script>
-      const $ = (id) => document.getElementById(id);
-      const PRESETS = { mid: { max: 1600, q: 0.72 }, low: { max: 1000, q: 0.5 } };
-      let items = [],
-        uid = 0,
-        blob = null;
+/* ---------- hoop game ---------- */
+const sp=$('sp'),doc=$('doc'),stage=$('stage'),inp=$('file');
+function place(x,y,rot,s){sp.style.transform='translate('+(x-28)+'px,'+(y-34)+'px) scale('+(s||1)+')';doc.style.transform='rotate('+(rot||0)+'deg)'}
+function geo(){const r=stage.getBoundingClientRect();W=r.width;H=r.height;R={x:W/2,y:138};S={x:Math.max(60,W*.2),y:H-84}}
+function showSprite(){
+  geo();const has=pend.length&&!fly;
+  $('auto').disabled=!pend.length;sp.hidden=!has;sp.style.opacity=1;sp.style.transition='none';
+  if(has){$('badge').textContent=pend.length>1?pend.length+' ملفات':(mode==='img'?'IMG':'PDF');$('spn').textContent=pend.length>1?'سدّدهم كلهم برمية وحدة':pend[0].name;place(S.x,S.y,0);$('hint').textContent='اسحب الملف للخلف وأفلته للتسديد'}
+  else if(!fly)$('hint').textContent=HINT[mode];
+}
+const dots=[...Array(16)].map(()=>{const i=document.createElement('i');i.hidden=true;$('dots').append(i);return i});
+function showDots(p,v){dots.forEach((d,k)=>{const t=(k+1)*.07;d.hidden=false;d.style.left=(p.x+v.x*t)+'px';d.style.top=(p.y+v.y*t+.5*G*t*t)+'px';d.style.opacity=.85-k*.04})}
+const hideDots=()=>dots.forEach(d=>d.hidden=true);
+sp.onpointerdown=e=>{if(fly)return;geo();drag=true;pos=null;pull=null;sp.setPointerCapture(e.pointerId);e.preventDefault()};
+sp.onpointermove=e=>{
+  if(!drag)return;const r=stage.getBoundingClientRect();
+  let dx=e.clientX-r.left-S.x,dy=e.clientY-r.top-S.y;const d=Math.hypot(dx,dy);
+  if(d>MAXP){dx*=MAXP/d;dy*=MAXP/d}
+  pull={x:-dx*K,y:-dy*K};pos={x:Math.min(Math.max(S.x+dx,30),W-30),y:Math.min(S.y+dy,H-40)};place(pos.x,pos.y,0);showDots(pos,pull);
+};
+sp.onpointerup=sp.onpointercancel=()=>{
+  if(!drag)return;drag=false;hideDots();
+  const ok=pull&&Math.hypot(pull.x,pull.y)>=30*K;
+  if(!ok){place(S.x,S.y);return}
+  launch(pos,pull);
+};
+function launch(p,v){fly={x:p.x,y:p.y,py:p.y,vx:v.x,vy:v.y,rot:0};$('auto').disabled=true;$('hint').textContent='';last=performance.now();requestAnimationFrame(step)}
+function step(t){
+  const dt=Math.min(.033,(t-last)/1000||.016);last=t;const f=fly;
+  f.vy+=G*dt;f.py=f.y;f.x+=f.vx*dt;f.y+=f.vy*dt;f.rot+=f.vx*dt*.3;place(f.x,f.y,f.rot);
+  if(f.vy>0&&f.py<R.y&&f.y>=R.y&&Math.abs(f.x-R.x)<64){score(f);return}
+  if(f.y>H+70||f.x<-70||f.x>W+70){fly=null;showSprite();$('hint').textContent='ارتدّت عن الحلقة. اسحب وسدّد مرة ثانية';return}
+  requestAnimationFrame(step);
+}
+function score(f){
+  sp.style.transition='transform .5s ease-in,opacity .5s';place(R.x,R.y+95,f.rot,.6);sp.style.opacity=0;
+  setTimeout(()=>{
+    fly=null;acceptMany(pend.splice(0));bump();showSprite();
+  },520);
+}
+function bump(){
+  $('board').classList.add('hit');const p=$('plus');p.classList.remove('on');void p.offsetWidth;p.classList.add('on');
+  setTimeout(()=>$('board').classList.remove('hit'),700);
+}
+$('auto').onclick=()=>{
+  if(!pend.length||fly)return;geo();place(S.x,S.y);const T=.95;
+  launch(S,{x:(R.x-S.x)/T,y:(R.y-4-S.y)/T-.5*G*T});
+};
 
-      const fmt = (b) => (b >= 1048576 ? (b / 1048576).toFixed(2) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB");
-      const tick = () => new Promise((r) => setTimeout(r, 0));
+/* ---------- files in ---------- */
+function addFiles(fs,direct){
+  const ok=[...fs].filter(ACC[mode]);
+  if(!ok.length){$('hint').textContent='نوع الملف مش مناسب لهاد الوضع';return}
+  if(direct){acceptMany(ok);bump()}
+  else{pend.push(...ok);if(!fly&&sp.hidden)showSprite();$('auto').disabled=false}
+}
+function acceptMany(fs){
+  fs.forEach(f=>items.push({id:++uid,file:f,th:null,p:0,st:'جاهز'}));
+  blob=null;$('res').hidden=true;renderDock();est();thumbs();
+}
+let thBusy=false;
+async function thumbs(){
+  if(thBusy||mode!=='img')return;thBusy=true;
+  for(const it of items){
+    if(it.th!==null)continue;
+    it.th='';
+    try{
+      const b=await createImageBitmap(it.file,{resizeWidth:96,resizeQuality:'low'});
+      const c=document.createElement('canvas');c.width=48;c.height=48;
+      const k=Math.max(48/b.width,48/b.height);
+      c.getContext('2d').drawImage(b,(48-b.width*k)/2,(48-b.height*k)/2,b.width*k,b.height*k);b.close&&b.close();
+      const bl=await new Promise(r=>c.toBlob(r,'image/jpeg',.7));
+      it.th=URL.createObjectURL(bl);
+      const el=$('th'+it.id);if(el)el.innerHTML='<img src="'+it.th+'" alt="">';
+    }catch(e){}
+    await tick();
+  }
+  thBusy=false;
+  if(mode==='img'&&items.some(i=>i.th===null))thumbs();
+}
+$('browse').onclick=()=>inp.click();
+inp.onchange=()=>{addFiles(inp.files,false);inp.value=''};
+stage.ondragover=e=>{e.preventDefault();$('board').classList.add('hit')};
+stage.ondragleave=()=>$('board').classList.remove('hit');
+stage.ondrop=e=>{e.preventDefault();$('board').classList.remove('hit');addFiles(e.dataTransfer.files,true)};
 
-      function add(files) {
-        for (const f of files) {
-          if (!f.type.startsWith("image/")) continue;
-          items.push({ id: ++uid, file: f, url: URL.createObjectURL(f) });
-        }
-        blob = null;
-        $("res").hidden = true;
-        render();
+function renderDock(){
+  $('dock').innerHTML=items.map((it,i)=>
+   '<div class="it" id="it'+it.id+'"><div class="th" id="th'+it.id+'">'+(mode==='img'?(it.th?'<img src="'+it.th+'" alt="">':''):'<em>PDF</em>')+'</div>'+
+   '<div class="n"><div>'+esc(it.file.name)+'</div><small>'+fmt(it.file.size)+' · <span id="st'+it.id+'">'+esc(it.st)+'</span></small>'+
+   '<div class="bar" id="bar'+it.id+'"'+(it.p?'':' hidden')+'><i style="width:'+Math.round(it.p*100)+'%"></i></div></div>'+
+   (mode==='img'?'<button class="ib" data-a="u" data-i="'+i+'"'+(i?'':' disabled')+' aria-label="للأعلى">↑</button><button class="ib" data-a="d" data-i="'+i+'"'+(i<items.length-1?'':' disabled')+' aria-label="للأسفل">↓</button>':'')+
+   '<button class="ib" data-a="x" data-i="'+i+'" aria-label="حذف">✕</button></div>').join('');
+  $('up').textContent=items.length;$('go').disabled=!items.length||busy;
+  $('tot').textContent=items.length?items.length+' ملف · '+fmt(items.reduce((a,b)=>a+b.file.size,0)):'';
+}
+function updItem(it){
+  const s=$('st'+it.id);if(!s)return;s.textContent=it.st;
+  const b=$('bar'+it.id);if(b){b.hidden=!it.p;b.firstChild.style.width=Math.round(it.p*100)+'%'}
+}
+$('dock').onclick=e=>{
+  const b=e.target.closest('button');if(!b||busy)return;
+  const i=+b.dataset.i,a=b.dataset.a;
+  if(a==='x'){const [it]=items.splice(i,1);it.th&&URL.revokeObjectURL(it.th)}
+  else{const j=a==='u'?i-1:i+1;[items[i],items[j]]=[items[j],items[i]]}
+  blob=null;$('res').hidden=true;renderDock();est();
+};
+
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));
+  document.querySelectorAll('.o').forEach(o=>o.hidden=o.dataset.m!==m);
+  inp.accept=m==='img'?'image/*':'application/pdf,.pdf';
+  items.forEach(i=>i.th&&URL.revokeObjectURL(i.th));items=[];pend=[];blob=null;
+  $('res').hidden=true;$('go').textContent=GO[m];msg('');renderDock();showSprite();
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{if(!busy&&!fly)setMode(b.dataset.m)});
+addEventListener('resize',()=>{if(!fly&&!drag)showSprite()});
+
+/* ---------- images -> PDF ---------- */
+function readURL(f){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
+async function cv(c,t,q){const b=await new Promise(r=>c.toBlob(r,t,q));return new Uint8Array(await b.arrayBuffer())}
+async function decode(f){
+  try{const b=await createImageBitmap(f);return{src:b,w:b.width,h:b.height,close:()=>b.close&&b.close()}}
+  catch(e){
+    const u=URL.createObjectURL(f),im=new Image();im.src=u;
+    try{await im.decode()}catch(e2){URL.revokeObjectURL(u);throw e2}
+    return{src:im,w:im.naturalWidth,h:im.naturalHeight,fb:1,close:()=>URL.revokeObjectURL(u)};
+  }
+}
+async function prepare(it,m){
+  const dc=await decode(it.file),w=dc.w,h=dc.h;
+  try{
+    if(m==='orig'){
+      const t=it.file.type;
+      if((t==='image/jpeg'||t==='image/png')&&!dc.fb){
+        let rot=false;
+        try{const raw=await createImageBitmap(it.file,{imageOrientation:'none'});rot=raw.width!==w;raw.close&&raw.close()}catch(e){}
+        if(!rot)return{data:new Uint8Array(await it.file.arrayBuffer()),type:t==='image/png'?'PNG':'JPEG',w,h};
       }
-      function render() {
-        const l = $("list");
-        l.innerHTML = "";
-        $("listCard").hidden = !items.length;
-        $("go").disabled = !items.length;
-        items.forEach((it, i) => {
-          const d = document.createElement("div");
-          d.className = "it";
-          const im = document.createElement("img");
-          im.src = it.url;
-          im.alt = "";
-          const n = document.createElement("div");
-          n.className = "n";
-          const a = document.createElement("div");
-          a.textContent = it.file.name;
-          const s = document.createElement("small");
-          s.textContent = fmt(it.file.size);
-          n.append(a, s);
-          const mk = (t, fn, dis) => {
-            const b = document.createElement("button");
-            b.className = "ib";
-            b.type = "button";
-            b.textContent = t;
-            b.disabled = !!dis;
-            b.onclick = fn;
-            return b;
-          };
-          d.append(
-            im,
-            n,
-            mk("↑", () => mv(i, -1), i === 0),
-            mk("↓", () => mv(i, 1), i === items.length - 1),
-            mk("✕", () => {
-              URL.revokeObjectURL(it.url);
-              items.splice(i, 1);
-              blob = null;
-              $("res").hidden = true;
-              render();
-            }),
-          );
-          l.append(d);
-        });
-        $("cnt").textContent = items.length + " صورة";
-        est();
-        $("tsize").textContent = "المجموع: " + fmt(items.reduce((a, b) => a + b.file.size, 0));
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(dc.src,0,0);
+      return t==='image/png'?{data:await cv(c,'image/png'),type:'PNG',w,h}:{data:await cv(c,'image/jpeg',.95),type:'JPEG',w,h};
+    }
+    const p=PRESETS[m],k=Math.min(1,p.max/Math.max(w,h)),cw=Math.max(1,Math.round(w*k)),ch=Math.max(1,Math.round(h*k));
+    const c=document.createElement('canvas');c.width=cw;c.height=ch;
+    const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cw,ch);x.imageSmoothingQuality='high';x.drawImage(dc.src,0,0,cw,ch);
+    return{data:await cv(c,'image/jpeg',p.q),type:'JPEG',w:cw,h:ch};
+  }finally{dc.close()}
+}
+async function est(){
+  const tok=++estTok,ids=['e0','e1','e2'],ms=['orig','mid','low'];
+  if(mode!=='img')return;
+  ids.forEach(i=>$(i).textContent=items.length?'…':'');
+  if(!items.length)return;
+  await new Promise(r=>setTimeout(r,500));if(tok!==estTok)return;
+  const n=items.length,tsz=items.reduce((a,b)=>a+b.file.size,0),cnt=Math.min(4,n),sm=[];
+  for(let k=0;k<cnt;k++)sm.push(items[Math.floor(k*n/cnt)]);
+  const sf=sm.reduce((a,b)=>a+b.file.size,0),rt={};
+  for(const m of ms){
+    let sum=0;
+    for(const it of sm){
+      it.est=it.est||{};
+      if(it.est[m]==null){
+        if(m==='orig'&&(it.file.type==='image/jpeg'||it.file.type==='image/png'))it.est[m]=it.file.size;
+        else{await tick();try{const p=await prepare(it,m);it.est[m]=p.data.length}catch(e){it.est[m]=it.file.size}}
+        if(tok!==estTok)return;
       }
-      let estTok = 0;
-      async function est() {
-        const tok = ++estTok,
-          ids = ["e0", "e1", "e2"],
-          ms = ["orig", "mid", "low"];
-        ids.forEach((i) => ($(i).textContent = items.length ? "…" : ""));
-        if (!items.length) return;
-        const tot = { orig: 0, mid: 0, low: 0 };
-        for (const it of items) {
-          it.est = it.est || {};
-          for (const m of ms) {
-            if (it.est[m] == null) {
-              if (m === "orig" && (it.file.type === "image/jpeg" || it.file.type === "image/png"))
-                it.est[m] = it.file.size;
-              else {
-                await tick();
-                try {
-                  const p = await prepare(it, m);
-                  it.est[m] = Math.round((p.data.length - p.data.indexOf(",") - 1) * 0.75);
-                } catch (e) {
-                  it.est[m] = it.file.size;
-                }
-              }
-              if (tok !== estTok) return;
-            }
-            tot[m] += it.est[m] + 1200;
-          }
-        }
-        ms.forEach((m, i) => ($(ids[i]).textContent = "≈ " + fmt(tot[m])));
+      sum+=it.est[m];
+    }
+    rt[m]=sum/sf;
+  }
+  ms.forEach((m,i)=>$(ids[i]).textContent='≈ '+fmt(tsz*rt[m]+n*1200));
+}
+function setRes(a,b){$('rsize').textContent=a;$('rcmp').textContent=b||'';$('res').hidden=false;$('res').scrollIntoView({behavior:'smooth',block:'nearest'})}
+async function doImg(){
+  const {jsPDF}=window.jspdf||{};if(!jsPDF)throw Error('تعذّر تحميل مكتبة PDF، تأكد من الإنترنت');
+  const q=document.querySelector('input[name=q]:checked').value,pg=$('page').value;
+  const m=Math.max(0,Math.min(50,parseFloat($('mar').value)||0))*2.835;let d=null,bad=0;
+  const pr=[],LA=3,get=i=>pr[i]||(pr[i]=prepare(items[i],q).then(v=>v,e=>({err:1})));
+  for(let i=0;i<items.length;i++){
+    for(let k=i;k<Math.min(items.length,i+LA);k++)get(k);
+    msg('جاري المعالجة '+(i+1)+' من '+items.length+' ('+Math.round(i/items.length*100)+'%)');
+    const im=await get(i);pr[i]=null;
+    if(im.err){items[i].st='تعذّرت قراءتها';bad++;updItem(items[i]);continue}
+    const land=im.w>im.h;let pw,ph,x,y,w,h;
+    if(pg==='a4'){
+      pw=land?842:595;ph=land?595:842;const k=Math.min((pw-2*m)/im.w,(ph-2*m)/im.h);
+      w=im.w*k;h=im.h*k;x=(pw-w)/2;y=(ph-h)/2;
+    }else{const k=842/Math.max(im.w,im.h);w=im.w*k;h=im.h*k;pw=w+2*m;ph=h+2*m;x=m;y=m}
+    const o=pw>ph?'l':'p';
+    if(!d)d=new jsPDF({unit:'pt',format:[pw,ph],orientation:o,compress:true});else d.addPage([pw,ph],o);
+    d.addImage(im.data,im.type,x,y,w,h,undefined,'FAST');
+    items[i].p=1;items[i].st='تم ✓';updItem(items[i]);await tick();
+  }
+  if(!d)throw Error('ما قدرت أقرأ أي صورة');
+  blob=d.output('blob');outName=nm('صور')+'.pdf';
+  const orig=items.reduce((a,b)=>a+b.file.size,0),df=Math.round((1-blob.size/orig)*100);
+  setRes('الحجم بعد التحويل: '+fmt(blob.size),'حجم الصور الأصلية: '+fmt(orig)+(df>0?' — وفّرت '+df+'%':'')+(bad?' — تخطّيت '+bad+' صورة ما انقرأت':''));
+}
+
+/* ---------- PDF -> images / split ---------- */
+async function pack(files,def){
+  if(!files.length)throw Error('ما طلع أي ملف');
+  if(files.length===1){blob=files[0].blob;outName=files[0].name}
+  else{const z=new JSZip();files.forEach(f=>z.file(f.name,f.blob,{compression:'STORE'}));blob=await z.generateAsync({type:'blob'});outName=nm(def)+'.zip'}
+  setRes(files.length===1?'الحجم: '+fmt(blob.size):files.length+' ملف داخل ZIP — '+fmt(blob.size),'');
+}
+async function doP2I(){
+  if(!window.pdfjsLib)throw Error('تعذّر تحميل مكتبة PDF، تأكد من الإنترنت');
+  const sc=+$('res2').value,png=$('fmt').value==='png',ext=png?'png':'jpg',files=[];
+  for(const it of items){
+    try{
+      const pdf=await pdfjsLib.getDocument({data:await it.file.arrayBuffer()}).promise;
+      for(let n=1;n<=pdf.numPages;n++){
+        msg(base(it.file)+' — صفحة '+n+' من '+pdf.numPages);await tick();
+        const pgx=await pdf.getPage(n),vp=pgx.getViewport({scale:sc}),c=document.createElement('canvas');
+        c.width=Math.floor(vp.width);c.height=Math.floor(vp.height);
+        await pgx.render({canvasContext:c.getContext('2d'),viewport:vp,background:'#fff'}).promise;
+        const b=await new Promise(r=>c.toBlob(r,png?'image/png':'image/jpeg',.92));
+        files.push({name:base(it.file)+'-'+n+'.'+ext,blob:b});it.p=n/pdf.numPages;updItem(it);
       }
-      function mv(i, d) {
-        const j = i + d;
-        [items[i], items[j]] = [items[j], items[i]];
-        blob = null;
-        $("res").hidden = true;
-        render();
+      it.st='تم ✓ ('+pdf.numPages+' صفحة)';
+    }catch(e){it.st=e&&e.name==='PasswordException'?'محمي بكلمة سر':'تعذّرت القراءة';it.p=0}
+    updItem(it);
+  }
+  await pack(files,'صور');
+}
+function parse(s,n){
+  const o=[];
+  s.split(/[,،\s]+/).filter(Boolean).forEach(p=>{
+    const m=p.match(/^(\d+)(?:-(\d+))?$/);if(!m)return;
+    let a=+m[1],b=+(m[2]||m[1]);if(a>b)[a,b]=[b,a];
+    for(let k=Math.max(a,1);k<=Math.min(b,n);k++)o.push(k-1);
+  });
+  if(!o.length){const e=Error('أرقام الصفحات غير صحيحة');e.bad=1;throw e}
+  return o;
+}
+async function doSplit(){
+  const L=window.PDFLib;if(!L)throw Error('تعذّر تحميل مكتبة PDF، تأكد من الإنترنت');
+  const each=document.querySelector('input[name=sm]:checked').value==='each',files=[];
+  for(const it of items){
+    try{
+      msg('جاري تقسيم '+it.file.name+'…');await tick();
+      const src=await L.PDFDocument.load(await it.file.arrayBuffer()),n=src.getPageCount(),b=base(it.file);
+      const jobs=each?[...Array(n)].map((_,i)=>[[i],b+'-p'+(i+1)+'.pdf']):[[parse($('rng').value,n),b+'-extract.pdf']];
+      for(const [idx,name] of jobs){
+        const o=await L.PDFDocument.create();(await o.copyPages(src,idx)).forEach(p=>o.addPage(p));
+        files.push({name,blob:new Blob([await o.save()],{type:'application/pdf'})});await tick();
       }
+      it.p=1;it.st='تم ✓ ('+n+' صفحة)';
+    }catch(e){it.st=e&&e.bad?e.message:'تعذّرت القراءة (ممكن الملف محمي)';it.p=0}
+    updItem(it);
+  }
+  await pack(files,'صفحات');
+}
 
-      const drop = $("drop"),
-        inp = $("file");
-      drop.onclick = () => inp.click();
-      drop.onkeydown = (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          inp.click();
-        }
-      };
-      inp.onchange = () => {
-        add(inp.files);
-        inp.value = "";
-      };
-      ["dragenter", "dragover"].forEach((t) =>
-        drop.addEventListener(t, (e) => {
-          e.preventDefault();
-          drop.classList.add("over");
-        }),
-      );
-      ["dragleave", "drop"].forEach((t) =>
-        drop.addEventListener(t, (e) => {
-          e.preventDefault();
-          drop.classList.remove("over");
-        }),
-      );
-      drop.addEventListener("drop", (e) => add(e.dataTransfer.files));
-      $("clear").onclick = () => {
-        items.forEach((i) => URL.revokeObjectURL(i.url));
-        items = [];
-        blob = null;
-        $("res").hidden = true;
-        render();
-      };
-
-      function readURL(f) {
-        return new Promise((ok, no) => {
-          const r = new FileReader();
-          r.onload = () => ok(r.result);
-          r.onerror = no;
-          r.readAsDataURL(f);
-        });
-      }
-
-      async function prepare(it, mode) {
-        const bmp = await createImageBitmap(it.file);
-        const w = bmp.width,
-          h = bmp.height;
-        if (mode === "orig") {
-          const t = it.file.type;
-          if (t === "image/jpeg" || t === "image/png") {
-            let rotated = false;
-            try {
-              const raw = await createImageBitmap(it.file, { imageOrientation: "none" });
-              rotated = raw.width !== w;
-              raw.close && raw.close();
-            } catch (e) {}
-            if (!rotated) {
-              bmp.close && bmp.close();
-              return { data: await readURL(it.file), type: t === "image/png" ? "PNG" : "JPEG", w, h };
-            }
-          }
-          const c = document.createElement("canvas");
-          c.width = w;
-          c.height = h;
-          c.getContext("2d").drawImage(bmp, 0, 0);
-          bmp.close && bmp.close();
-          return { data: c.toDataURL("image/png"), type: "PNG", w, h };
-        }
-        const p = PRESETS[mode],
-          k = Math.min(1, p.max / Math.max(w, h));
-        const cw = Math.round(w * k),
-          ch = Math.round(h * k);
-        const c = document.createElement("canvas");
-        c.width = cw;
-        c.height = ch;
-        const x = c.getContext("2d");
-        x.fillStyle = "#fff";
-        x.fillRect(0, 0, cw, ch);
-        x.imageSmoothingQuality = "high";
-        x.drawImage(bmp, 0, 0, cw, ch);
-        bmp.close && bmp.close();
-        return { data: c.toDataURL("image/jpeg", p.q), type: "JPEG", w: cw, h: ch };
-      }
-
-      $("go").onclick = async () => {
-        const mode = document.querySelector("input[name=q]:checked").value;
-        const pg = $("page").value;
-        $("go").disabled = true;
-        $("res").hidden = true;
-        blob = null;
-        const { jsPDF } = window.jspdf || {};
-        if (!jsPDF) {
-          $("status").textContent = "تعذّر تحميل مكتبة PDF. تأكد من الإنترنت وأعد تحميل الصفحة.";
-          $("go").disabled = false;
-          return;
-        }
-        let doc = null;
-        const m = Math.max(0, Math.min(50, parseFloat($("mar").value) || 0)) * 2.835;
-        try {
-          for (let i = 0; i < items.length; i++) {
-            $("status").textContent = "جاري معالجة الصورة " + (i + 1) + " من " + items.length + "…";
-            await tick();
-            const im = await prepare(items[i], mode);
-            const land = im.w > im.h;
-            let pw, ph, x, y, w, h;
-            if (pg === "a4") {
-              pw = land ? 842 : 595;
-              ph = land ? 595 : 842;
-              const k = Math.min((pw - 2 * m) / im.w, (ph - 2 * m) / im.h);
-              w = im.w * k;
-              h = im.h * k;
-              x = (pw - w) / 2;
-              y = (ph - h) / 2;
-            } else {
-              const k = 842 / Math.max(im.w, im.h);
-              w = im.w * k;
-              h = im.h * k;
-              pw = w + 2 * m;
-              ph = h + 2 * m;
-              x = m;
-              y = m;
-            }
-            const o = pw > ph ? "l" : "p";
-            if (!doc) doc = new jsPDF({ unit: "pt", format: [pw, ph], orientation: o, compress: true });
-            else doc.addPage([pw, ph], o);
-            doc.addImage(im.data, im.type, x, y, w, h, undefined, "FAST");
-          }
-          blob = doc.output("blob");
-          const orig = items.reduce((a, b) => a + b.file.size, 0);
-          $("rsize").textContent = "الحجم بعد التحويل: " + fmt(blob.size);
-          const diff = Math.round((1 - blob.size / orig) * 100);
-          $("rcmp").textContent = "حجم الصور الأصلية: " + fmt(orig) + (diff > 0 ? " — وفّرت " + diff + "%" : "");
-          $("res").hidden = false;
-          $("status").textContent = "جاهز ✓";
-          $("res").scrollIntoView({ behavior: "smooth", block: "nearest" });
-        } catch (e) {
-          $("status").textContent = "صار خطأ أثناء التحويل: " + (e && e.message ? e.message : e);
-        }
-        $("go").disabled = !items.length;
-      };
-
-      $("save").onclick = async () => {
-        if (!blob) return;
-        const nm = ($("name").value.trim() || "صور").replace(/[\\/:*?"<>|]/g, "-");
-        try {
-          const d = typeof claude !== "undefined" && claude.use ? await claude.use("downloads") : null;
-          if (d) {
-            await d.save({ filename: nm + ".pdf", data: blob });
-          } else {
-            const u = URL.createObjectURL(blob),
-              a = document.createElement("a");
-            a.href = u;
-            a.download = nm + ".pdf";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            setTimeout(() => URL.revokeObjectURL(u), 10000);
-          }
-          $("status").textContent = "تم الحفظ ✓";
-        } catch (e) {
-          $("status").textContent =
-            e && e.code === "declined" ? "تم إلغاء التنزيل." : "تعذّر التنزيل: " + ((e && e.message) || e);
-        }
-      };
-      render();
-    </script>
-  </body>
+$('go').onclick=async()=>{
+  if(busy||!items.length)return;
+  busy=true;estTok++;blob=null;$('res').hidden=true;items.forEach(i=>{i.p=0;i.st='جاهز';updItem(i)});
+  try{await({img:doImg,p2i:doP2I,split:doSplit})[mode]();msg('جاهز ✓')}
+  catch(e){msg('صار خطأ: '+((e&&e.message)||e))}
+  busy=false;renderDock();
+};
+$('save').onclick=async()=>{
+  if(!blob)return;
+  try{
+    const d=(typeof claude!=='undefined'&&claude.use)?await claude.use('downloads'):null;
+    if(d){await d.save({filename:outName,data:blob})}
+    else{
+      const u=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=u;a.download=outName;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(u),10000);
+    }
+    msg('تم الحفظ ✓');
+  }catch(e){msg(e&&e.code==='declined'?'تم إلغاء التنزيل.':'تعذّر التنزيل: '+((e&&e.message)||e))}
+};
+setMode('img');
+</script>
+</body>
 </html>
