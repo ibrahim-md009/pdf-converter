@@ -69,6 +69,8 @@ select,input[type=text],input[type=number]{width:100%;padding:9px;border-radius:
 #msg{text-align:center;color:var(--mute);font-size:.85rem;margin:8px 0 0;min-height:1.3em}
 .tot{color:var(--mute);font-size:.8rem;margin:10px 0 4px;min-height:1em}
 .dock{display:flex;flex-direction:column;gap:8px}
+.dock .b{width:100%;padding:10px}
+.hoop,.net{cursor:pointer}
 .it{content-visibility:auto;contain-intrinsic-size:auto 58px;display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:8px 10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .th{width:42px;height:42px;border-radius:8px;background:var(--line);overflow:hidden;display:grid;place-items:center;flex:none}
 .th img{width:100%;height:100%;object-fit:cover}
@@ -151,14 +153,14 @@ select,input[type=text],input[type=number]{width:100%;padding:9px;border-radius:
   <button class="go" id="go" type="button" disabled>حوّل إلى PDF</button>
   <p id="msg" role="status"></p>
 
-  <div class="tot" id="tot"></div>
-  <div class="dock" id="dock"></div>
-
   <div class="res" id="res" hidden>
     <div class="big" id="rsize"></div>
     <div class="cmp" id="rcmp"></div>
     <button class="go" id="save" type="button" style="margin:0">تنزيل</button>
   </div>
+  <div class="tot" id="tot"></div>
+  <div class="dock" id="dock"></div>
+
 </div>
 </main>
 
@@ -260,18 +262,20 @@ async function thumbs(){
   if(mode==='img'&&items.some(i=>i.th===null))thumbs();
 }
 $('browse').onclick=()=>inp.click();
+document.querySelector('.hoop').onclick=document.querySelector('.net').onclick=()=>{if(!fly&&!drag)inp.click()};
 inp.onchange=()=>{addFiles(inp.files,false);inp.value=''};
 stage.ondragover=e=>{e.preventDefault();$('board').classList.add('hit')};
 stage.ondragleave=()=>$('board').classList.remove('hit');
 stage.ondrop=e=>{e.preventDefault();$('board').classList.remove('hit');addFiles(e.dataTransfer.files,true)};
 
+let showAll=false;
 function renderDock(){
-  $('dock').innerHTML=items.map((it,i)=>
+  $('dock').innerHTML=items.slice(0,showAll?items.length:3).map((it,i)=>
    '<div class="it" id="it'+it.id+'"><div class="th" id="th'+it.id+'">'+(mode==='img'?(it.th?'<img src="'+it.th+'" alt="">':''):'<em>PDF</em>')+'</div>'+
    '<div class="n"><div>'+esc(it.file.name)+'</div><small>'+fmt(it.file.size)+' · <span id="st'+it.id+'">'+esc(it.st)+'</span></small>'+
    '<div class="bar" id="bar'+it.id+'"'+(it.p?'':' hidden')+'><i style="width:'+Math.round(it.p*100)+'%"></i></div></div>'+
    (mode==='img'?'<button class="ib" data-a="u" data-i="'+i+'"'+(i?'':' disabled')+' aria-label="للأعلى">↑</button><button class="ib" data-a="d" data-i="'+i+'"'+(i<items.length-1?'':' disabled')+' aria-label="للأسفل">↓</button>':'')+
-   '<button class="ib" data-a="x" data-i="'+i+'" aria-label="حذف">✕</button></div>').join('');
+   '<button class="ib" data-a="x" data-i="'+i+'" aria-label="حذف">✕</button></div>').join('')+(items.length>3?'<button class="b w" data-a="m" type="button">'+(showAll?'إخفاء باقي ':'عرض باقي ')+(mode==='img'?'الصور':'الملفات')+(showAll?'':' ('+(items.length-3)+')')+'</button>':'');
   $('up').textContent=items.length;$('go').disabled=!items.length||busy;
   $('tot').textContent=items.length?items.length+' ملف · '+fmt(items.reduce((a,b)=>a+b.file.size,0)):'';
 }
@@ -280,7 +284,9 @@ function updItem(it){
   const b=$('bar'+it.id);if(b){b.hidden=!it.p;b.firstChild.style.width=Math.round(it.p*100)+'%'}
 }
 $('dock').onclick=e=>{
-  const b=e.target.closest('button');if(!b||busy)return;
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.a==='m'){showAll=!showAll;renderDock();return}
+  if(busy)return;
   const i=+b.dataset.i,a=b.dataset.a;
   if(a==='x'){const [it]=items.splice(i,1);it.th&&URL.revokeObjectURL(it.th)}
   else{const j=a==='u'?i-1:i+1;[items[i],items[j]]=[items[j],items[i]]}
@@ -292,7 +298,7 @@ function setMode(m){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.m===m));
   document.querySelectorAll('.o').forEach(o=>o.hidden=o.dataset.m!==m);
   inp.accept=m==='img'?'image/*':'application/pdf,.pdf';
-  items.forEach(i=>i.th&&URL.revokeObjectURL(i.th));items=[];pend=[];blob=null;
+  items.forEach(i=>i.th&&URL.revokeObjectURL(i.th));items=[];showAll=false;pend=[];blob=null;
   $('res').hidden=true;$('go').textContent=GO[m];msg('');renderDock();showSprite();
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{if(!busy&&!fly)setMode(b.dataset.m)});
